@@ -1,6 +1,7 @@
 import {
 	Triangle,
-	Vector3
+	Vector3,
+	Vector2
 } from 'three';
 
 /**
@@ -16,6 +17,7 @@ import {
 
 const _face = new Triangle();
 const _color = new Vector3();
+const _texCoord = new Vector2();
 
 class MeshSurfaceSampler {
 
@@ -36,6 +38,7 @@ class MeshSurfaceSampler {
 
 		this.positionAttribute = this.geometry.getAttribute( 'position' );
 		this.colorAttribute = this.geometry.getAttribute( 'color' );
+		this.uvAttribute = this.geometry.getAttribute( 'uv' );
 		this.weightAttribute = null;
 
 		this.distribution = null;
@@ -106,13 +109,13 @@ class MeshSurfaceSampler {
 
 	}
 
-	sample( targetPosition, targetNormal, targetColor ) {
+	sample( targetPosition, targetNormal, targetColor, targetTexCoord ) {
 
 		const cumulativeTotal = this.distribution[ this.distribution.length - 1 ];
 
 		const faceIndex = this.binarySearch( this.randomFunction() * cumulativeTotal );
 
-		return this.sampleFace( faceIndex, targetPosition, targetNormal, targetColor );
+		return this.sampleFace( faceIndex, targetPosition, targetNormal, targetColor, targetTexCoord );
 
 	}
 
@@ -150,7 +153,7 @@ class MeshSurfaceSampler {
 
 	}
 
-	sampleFace( faceIndex, targetPosition, targetNormal, targetColor ) {
+	sampleFace( faceIndex, targetPosition, targetNormal, targetColor, targetTexCoord ) {
 
 		let u = this.randomFunction();
 		let v = this.randomFunction();
@@ -193,6 +196,23 @@ class MeshSurfaceSampler {
 			targetColor.r = _color.x;
 			targetColor.g = _color.y;
 			targetColor.b = _color.z;
+
+		}
+
+		if ( targetTexCoord !== undefined && this.uvAttribute !== undefined ) {
+
+			_face.a.fromBufferAttribute( this.uvAttribute, faceIndex * 3 );
+			_face.b.fromBufferAttribute( this.uvAttribute, faceIndex * 3 + 1 );
+			_face.c.fromBufferAttribute( this.uvAttribute, faceIndex * 3 + 2 );
+
+			_texCoord
+				.set( 0, 0 )
+				.addScaledVector( _face.a, u )
+				.addScaledVector( _face.b, v )
+				.addScaledVector( _face.c, 1 - ( u + v ) );
+
+			targetTexCoord.x = _uv.x;
+			targetTexCoord.y = _uv.y;
 
 		}
 
